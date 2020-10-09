@@ -1,3 +1,5 @@
+module Relations 
+
 import Data.Nat
 
 %default total
@@ -8,6 +10,7 @@ lte_antisym : a `LTE` b -> b `LTE` a -> a = b
 lte_antisym LTEZero LTEZero = Refl
 lte_antisym (LTESucc x) (LTESucc y) = cong S (lte_antisym x y)
 
+public export
 data Total : (m, n : Nat) -> Type where
   Fwd : m `LTE` n -> Total m n
   Bwd : n `LTE` m -> Total m n
@@ -19,6 +22,7 @@ lte_total {m = (S k)} {n = (S j)} = case (lte_total {m=k} {n=j}) of
   Fwd lte => Fwd (LTESucc lte)
   Bwd lte => Bwd (LTESucc lte)
 
+public export
 data (<) : (n, m : Nat) -> Type where
   LTZero : Z < S n
   LTSucc : a < b -> S a < S b
@@ -28,8 +32,7 @@ data Tri : (n, m : Nat) -> Type where
   TriEQ : a = b -> Tri a b
   TriGT : b < a -> Tri a b
 
-
-
+public export
 lt_trans : a < b -> b < c -> a < c
 lt_trans LTZero (LTSucc x) = LTZero
 lt_trans (LTSucc x) (LTSucc y) = LTSucc (lt_trans x y)

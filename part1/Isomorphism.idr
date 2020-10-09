@@ -10,18 +10,26 @@ funext : {f, g : a ->  b}
 
 depfunext : {b : a -> Type} -> {f, g : (x : a) -> b x}
     -> ((x : a) -> f x ~~ g x)
-      -----------------------
+    --------------------------
     -> f ~~ g
 
-infix 4 ~=
+infix 0 ~=
   
 public export
-record (~=) (a : Type) (b : Type) where 
-  constructor MkIso
-  to : a -> b
-  from : b -> a
-  from_to : {a : Type} -> (x : a) -> from (to x) ~~ x
-  to_from : (x : b) -> to (from x) ~~ x
+data (~=) : (a, b : Type) -> Type where 
+  MkIso : (to      : a -> b)
+       -> (from    : b -> a)
+       -> (from_to : (x : a) -> from (to x) ~~ x)
+       -> (to_from : (x : b) -> to (from x) ~~ x)
+       -> a ~= b
+
+to : a ~= b -> a -> b
+
+from : a ~= b -> b -> a
+
+from_to : (iso : a ~= b) -> (x : a) -> from iso (to iso x) ~~ x
+
+to_from : (iso : a ~= b) -> (x : b) -> to iso (from iso x) ~~ x
 
 public export
 reflIso : a ~= a
@@ -30,17 +38,17 @@ reflIso = MkIso id id (\x => Refx) (\x => Refx)
 public export
 Preorder Type (~=) where
   reflexive a = reflIso
-  transitive a b c ab bc = MkIso (bc.to . ab.to) (ab.from . bc.from) 
+  transitive a b c ab bc = MkIso (to bc . to ab) (from ab . from bc) 
                                  (\x => begin (~~) $
                                       from ab (from bc (to bc (to ab x)))
-                                     -< eq_cong (ab.from) (bc.from_to (ab.to x))>- 
+                                     -< eq_cong (from ab) (from_to bc (to ab x))>- 
                                       from ab (to ab x)  
-                                     -< ab.from_to x >-
+                                     -< from_to ab x >-
                                       End x ) 
                                  (\x => begin (~~) $
                                        (to bc (to ab (from ab (from bc x)))) 
-                                      -< eq_cong (bc.to) (ab.to_from (bc.from x)) >-
-                                       (bc.to (bc.from x))
+                                      -< eq_cong (to bc) (to_from ab (from bc x)) >-
+                                       (to bc (from bc x))
                                       -< bc.to_from x >-
                                        End x)
 
@@ -61,12 +69,12 @@ reflEmb = MkEmb id id (\x => Refx)
 export
 Preorder Type (~<) where
   reflexive a = reflEmb
-  transitive a b c ab bc = MkEmb (bc.to . ab.to) (ab.from . bc.from) 
+  transitive a b c ab bc = MkEmb (to bc . to ab) (from ab . from bc) 
                                  (\x => begin (~~) $
                                       from ab (from bc (to bc (to ab x)))
-                                     -< eq_cong (ab.from) (bc.from_to (ab.to x))>- 
+                                     -< eq_cong (from ab) (from_to bc (to ab x))>- 
                                       from ab (to ab x)  
-                                     -< ab.from_to x >-
+                                     -< from_to ab x >-
                                       End x ) 
 
 export
@@ -86,5 +94,4 @@ namespace Equiv
 export
 Preorder Type (<=>) where
   reflexive a = MkEquiv id id
-  transitive a b c ab bc = MkEquiv (bc.to . ab.to) (ab.from . bc.from)
-
+  transitive a b c ab bc = MkEquiv (to bc . to ab) (from ab . from bc)

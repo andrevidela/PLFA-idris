@@ -3,11 +3,21 @@ module Isomorphism
 import Equality
 import Decidable.Order
 
+public export
+apply_prf : (f : a -> b) -> (\x => f x) = f
+apply_prf _ = Refl
+
+export
+apply_dep_prf : {0 b : u -> Type} -> (f : (a : u) -> b a) -> (\x => f x) = f
+apply_dep_prf _ = Refl
+
+export
 funext : {f, g : a ->  b}
     -> ((x : a) -> f x ~~ g x)
       -----------------------
     -> f ~~ g
 
+export
 depfunext : {b : a -> Type} -> {f, g : (x : a) -> b x}
     -> ((x : a) -> f x ~~ g x)
     --------------------------

@@ -22,6 +22,34 @@ public export
 right : a `X` b -> b
 right (a >< b) = b
 
+public export
+proj1 : a `X` b -> a
+proj1 (a >< b) = a
+
+public export
+proj2 : a `X` b -> b
+proj2 (a >< b) = b
+
+public export
+proj1_same : (x : a) -> proj1 (x >< x) ~~ x
+proj1_same _ = Refx
+
+public export
+proj2_same : (x : a) -> proj2 (x >< x) ~~ x
+proj2_same _ = Refx
+
+public export
+eta_prod : (w : X a b) ->  ((proj1 w) >< (proj2 w)) ~~ w
+eta_prod (x >< y) = Refx
+
+public export
+impl_distrib_prod : {0 a, b, c : Type} -> (a -> (b `X` c)) ~= ((a -> b) `X` (a -> c))
+impl_distrib_prod = MkIso (\x => proj1 . x >< proj2 . x)
+                          (\(l >< r), a => l a >< r a) 
+                          (\f => funext $ (\x => eta_prod (f x)))
+                          (\(l >< r) => rewrite  apply_prf l in 
+                                        rewrite apply_prf  r in Refx)
+
 equiv_iso_prod : {a, b : Type} -> (a <=> b) ~= ((a -> b) `X` (b -> a))
 equiv_iso_prod = MkIso (\eq => eq.to >< eq.from) 
                        (\(a >< b) => MkEquiv a b) 

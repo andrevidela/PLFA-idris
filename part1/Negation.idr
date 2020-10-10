@@ -30,9 +30,32 @@ lt_irreflexive {n = Z} LTZero impossible
 lt_irreflexive {n = Z} (LTSucc x) impossible
 lt_irreflexive {n = (S k)} (LTSucc x) = lt_irreflexive {n=k} x
 
-deMorgan : Not (a |+| b) ~= ((Not a) `X` (Not b))
+
+deMorgan : (Not (a |+| b)) ~= ((Not a) `X` (Not b))
 deMorgan = MkIso (\c => (\x => c (Left x)) >< (\x => c (Right x)))
-                 (\(x >< y) => (\case (Left a) => x a
+                 (\(x >< y) => (\v => case v of
+                                      (Left a) => x a
                                       (Right b) => y b)) 
-                 (\contra => ?tofr_2) 
-                 (\(c1 >< c2) => ?whuat)
+                 (\contra => ?what) 
+                 (\(c1 >< c2) => rewrite apply_prf {f = c1} in
+                                 rewrite apply_prf {f = c2} in Refx)
+
+em_irrefutable : {x : a} -> Not (Not (a |+| Not a))
+em_irrefutable f = f (Right (\y => f (Left x)))
+
+excluded_middle : (a : Type) -> a |+| Not a
+
+double_neg : (a : Type) -> Not (Not a) -> a
+
+pierce_law : (a, b : Type) -> ((a -> b) -> a)
+
+impl_disj : (a, b : Type) -> (a -> b) -> Not a |+| b
+
+excluded_middle_to_everything : (a : Type) -> a |+| Not a
+  ->  ( Not (Not a) -> a
+      , (b : Type) -> (a -> b) -> a
+      , (b : Type) -> ((Not a) |+| b)
+      )
+excluded_middle_to_everything a x = (\na => case x of {Left a => a; Right n => elim_bot $ na n} 
+  , \tpe, ab => ?qwe, ?zxc)
+

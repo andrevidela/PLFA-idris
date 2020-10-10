@@ -1,7 +1,7 @@
 module Equality
 
 import Data.Nat
-import Decidable.Order
+import public Decidable.Order
 
 %default total
 

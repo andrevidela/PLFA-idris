@@ -7,10 +7,17 @@ public export
 apply_prf : (f : a -> b) -> (\x => f x) = f
 apply_prf _ = Refl
 
+public export
+apply_prf2 : (f : a -> b -> c) -> (\x, y => f x y) = f
+apply_prf2 _ = Refl
+
 export
 apply_dep_prf : {0 b : u -> Type} -> (f : (a : u) -> b a) -> (\x => f x) = f
 apply_dep_prf _ = Refl
 
+export
+apply_dep_prf2 : {0 b : u -> Type} -> (f : (a : u) -> b a -> c) -> (\x, y => f x y) = f
+apply_dep_prf2 _ = Refl
 export
 funext : {f, g : a ->  b}
     -> ((x : a) -> f x ~~ g x)

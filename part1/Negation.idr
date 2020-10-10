@@ -11,9 +11,11 @@ import Equality
 %hide EqOrd.(<)
 %default total
 
+public export
 Not : Type -> Type
 Not a = a -> Bot
 
+public export
 elim_not : Not a -> a -> Bot
 elim_not f x = f x
 
@@ -22,9 +24,15 @@ not_not_intro x f = f x
 
 infix 4 =/=
 
+public export
 (=/=) : Type -> Type -> Type
 x =/= y = Not (x ~~ y)
 
+public export
+sym_not : (a =/= b) -> (b =/= a)
+sym_not f Refx = f Refx
+
+public export
 lt_irreflexive : {n : Nat} -> Not (n < n)
 lt_irreflexive {n = Z} LTZero impossible
 lt_irreflexive {n = Z} (LTSucc x) impossible
@@ -37,8 +45,8 @@ deMorgan = MkIso (\c => (\x => c (Left x)) >< (\x => c (Right x)))
                                       (Left a) => x a
                                       (Right b) => y b)) 
                  (\contra => ?what) 
-                 (\(c1 >< c2) => rewrite apply_prf {f = c1} in
-                                 rewrite apply_prf {f = c2} in Refx)
+                 (\(c1 >< c2) => rewrite apply_prf c1 in
+                                 rewrite apply_prf c2 in Refx)
 
 em_irrefutable : {x : a} -> Not (Not (a |+| Not a))
 em_irrefutable f = f (Right (\y => f (Left x)))

@@ -1,10 +1,23 @@
+module Induction
 
 import Syntax.PreorderReasoning
 
 %default total
+
+export
 plus_assoc : (n, m, p : Nat) -> (n + m) + p = n + (m + p)
 plus_assoc 0 m p = Refl
 plus_assoc (S k) m p = cong S (plus_assoc k m p)
+
+export
+plus_id_right : (n : Nat) -> n + 0 = n
+plus_id_right 0 = Refl
+plus_id_right (S k) = cong S (plus_id_right k)
+
+export
+plus_id_left : (n : Nat) -> 0 + n = n
+plus_id_left Z = Refl
+plus_id_left (S k) = cong S Refl
 
 plus_right_zero : (n : Nat) -> n = n + 0
 

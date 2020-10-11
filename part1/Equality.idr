@@ -9,9 +9,17 @@ infix 4 ~~
 
 
 public export
-data (~~) : {a : Type} -> (u, v : a) -> Type where
+data (~~) : {0 a : Type} -> (u, v : a) -> Type where
   Refx : x ~~ x
 
+public export 
+eq : a ~~ b -> a = b
+eq Refx = Refl
+
+export
+fromEq : a = b -> a ~~ b
+fromEq Refl = Refx
+ 
 public export
 eq_sym : (0 _ : a ~~ b) -> b ~~ a
 eq_sym Refx = Refx

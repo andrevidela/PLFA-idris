@@ -22,7 +22,7 @@ elim_not f x = f x
 not_not_intro : a -> Not (Not a)
 not_not_intro x f = f x
 
-infix 4 =/=
+infix 1 =/=
 
 public export
 (=/=) : Type -> Type -> Type
@@ -31,6 +31,12 @@ x =/= y = Not (x ~~ y)
 public export
 sym_not : (a =/= b) -> (b =/= a)
 sym_not f Refx = f Refx
+
+
+export
+not_cong : {0 t: Type} -> {0 a, b : t} ->
+           (0 f : (t -> u)) -> (1 _ : Not (a ~~ b)) -> Not (f a ~~ f b)
+not_cong f g x = g (funinj {f} x)
 
 public export
 lt_irreflexive : {n : Nat} -> Not (n < n)
@@ -43,8 +49,8 @@ deMorgan : (Not (a |+| b)) ~= ((Not a) `X` (Not b))
 deMorgan = MkIso (\c => (\x => c (Left x)) >< (\x => c (Right x)))
                  (\(x >< y) => (\v => case v of
                                       (Left a) => x a
-                                      (Right b) => y b)) 
-                 (\contra => ?what) 
+                                      (Right b) => y b))
+                 (\contra => ?what)
                  (\(c1 >< c2) => rewrite apply_prf c1 in
                                  rewrite apply_prf c2 in Refx)
 
@@ -64,6 +70,6 @@ excluded_middle_to_everything : (a : Type) -> a |+| Not a
       , (b : Type) -> (a -> b) -> a
       , (b : Type) -> ((Not a) |+| b)
       )
-excluded_middle_to_everything a x = (\na => case x of {Left a => a; Right n => elim_bot $ na n} 
+excluded_middle_to_everything a x = (\na => case x of {Left a => a; Right n => elim_bot $ na n}
   , \tpe, ab => ?qwe, ?zxc)
 

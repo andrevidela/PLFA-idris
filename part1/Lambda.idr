@@ -1,7 +1,7 @@
 module Lambda
 
 import Decidable.Equality
-import Connectives
+import Connectives 
 import Equality
 
 public export
@@ -35,7 +35,7 @@ two : Term
 two = Succ (Succ Zero)
 
 plus : Term
-plus = Mu "+" $ \\ "m" $ \\ "n" $
+plus = Mu "+" ==> \\ "m" ==> \\ "n" ==>
          Case (^"m")
               (^"n")
               "m"
@@ -55,7 +55,7 @@ mult : Term
 mult = Mu "*" ==> \\"m" ==> \\"n" ==>
           Case (^"m")
                Zero
-               "m" (plus |> ^"m" |> ^"n")
+               "m" (plus |> ^"m" |> (^"*" |> ^"m" |> ^"n"))
 
 mult_church : Term
 mult_church = \\"m" ==> \\"n" ==> \\"s" ==> \\"z" ==>
@@ -68,7 +68,7 @@ data Value : Term -> Type where
   VSucc : Value v -> Value (Succ v)
 
 public export
-subst : Term -> Id -> Term -> Term
+subst : Term -> (name : Id) -> (replacement : Term) -> Term
 subst (^ x) y z with (decEq x y)
   subst (^ x) y z | (Yes prf) = z
   subst (^ x) y z | (No contra) = ^x
@@ -88,7 +88,6 @@ subst (Mu x w) y v with (decEq x y)
   subst (Mu x w) y v | (No contra) = Mu x ==> (subst w y v)
 
 mutual
-
   substEq : Id -> Id -> (Term -> Term) -> Term -> Term -> Term
   substEq x y f w v with (decEq x y)
     substEq x y f w v | (Yes prf) = f w
@@ -112,7 +111,7 @@ public export
 data (~>) : Term -> Term -> Type where
   Xi1 : l ~> l' -> l |> m ~> l' |> m
   Xi2 : Value v -> m ~> m' -> v |> m ~> v |> m'
-  BetaLam : Value v -> (\\x ==> n) |> v ~> subst n x v
+  BetaLam : Value v -> (\\arg ==> body) |> v ~> subst body arg v
   XiSucc : m ~> m' -> Succ m ~> Succ m'
   XiCase : l ~> l' -> Case l m x n ~> Case l' m x n
   BetaZero : Case Zero m x n ~> m
@@ -243,8 +242,8 @@ data Ctxt : Type where
 -- Judgement
 public export
 data (>:) : Ctxt -> Typed -> Type where
-  Z : gam && x .: a >: x .: a
-  S : (0 notEq : (x == y) = False) -> gam >: x .: a -> gam && y .: b >: x .: a
+  Z : gam && xZ .: a >: xZ .: a
+  S : (0 notEq : (xS == y) = False) -> gam >: xS .: a -> gam && y .: b >: xS .: a
 
 public export
 S' : {auto prf : (x == y) = False} -> gam >: x .: a -> gam && y .: b >: x .: a
@@ -258,14 +257,15 @@ data (|-) : Ctxt -> TypedTerm -> Type where
           ---------------
           gam |- (^x) .: a
 
-  Impl : {0 a, b : LType} -> gam && x .: a |- n .: b ->
-         --------------------------------------------
-         gam |- (\\x ==> n) .: a =>> b
+  Impl : {0 xImpl : Id} -> {0 a, b : LType} -> 
+         gam && xImpl .: a |- n .: b ->
+         -----------------------------
+         gam |- (\\xImpl ==> n) .: a =>> b
 
   Elim : {0 a, b : LType} -> {0 l, m : Term} ->
          gam |- l .: a =>> b ->
          gam |- (m .: a) ->
-         -------------------
+         --------------------
          gam |- (l |> m) .: b
 
   ZeroNat : gam |- Zero .: NatType
@@ -301,6 +301,7 @@ jTwoPlusTwo = (jPlus `Elim` jTwo) `Elim` jTwo
 jSuccChurch : [] |- Succ_church .: NatType =>> NatType
 jSuccChurch = Impl (SuccNat (Axiom Z))
 
+-- Magnificent hack
 lolStrings : intToBool (prim__eq_String x x) = False -> Void
 
 context_injective : gam >: x .: a -> gam >: x .: b -> a = b
@@ -309,6 +310,6 @@ context_injective Z (S notEq y) = void (lolStrings notEq)
 context_injective (S notEq y) Z = void (lolStrings notEq)
 context_injective (S notEq y) (S prf z) = context_injective y z
 
-jMul : [] |- Lambda.mult .: NatType =>> NatType =>> NatType
-jMul = MuRec $ Impl $ Impl $ CaseElim (Axiom (S Refl Z)) ZeroNat
-             (Elim (Elim jPlus (Axiom Z)) (Axiom (S Refl Z)))
+-- jMul : [] |- Lambda.mult .: NatType =>> NatType =>> NatType
+-- jMul = MuRec $ Impl $ Impl $ CaseElim (Axiom (S Refl Z)) ZeroNat
+--              (Elim (Elim jPlus (Axiom Z)) (Axiom (S Refl Z)))

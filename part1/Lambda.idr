@@ -1,7 +1,7 @@
 module Lambda
 
 import Decidable.Equality
-import Connectives 
+import Connectives
 import Equality
 
 public export
@@ -243,21 +243,25 @@ data Ctxt : Type where
 public export
 data (>:) : Ctxt -> Typed -> Type where
   Z : gam && xZ .: a >: xZ .: a
-  S : (0 notEq : (xS == y) = False) -> gam >: xS .: a -> gam && y .: b >: xS .: a
+  S : (0 notEq : Not (xS = y)) -> gam >: xS .: a -> gam && y .: b >: xS .: a
+
+LiftContra : {0 a, b : String} ->  a == b = False -> Not (a = b)
+LiftContra prf Refl = ?LiftContra_rhs_1
 
 public export
 S' : {auto prf : (x == y) = False} -> gam >: x .: a -> gam && y .: b >: x .: a
-S' prev = S prf prev
+S' prev = S (LiftContra prf) prev
 
 -- Typing judgement
 public export
 data (|-) : Ctxt -> TypedTerm -> Type where
 
-  Axiom : gam >: x .: a ->
+  Axiom : {x : Id} ->
+          gam >: x .: a ->
           ---------------
           gam |- (^x) .: a
 
-  Impl : {0 xImpl : Id} -> {0 a, b : LType} -> 
+  Impl : {xImpl : Id} -> {0 a, b : LType} ->
          gam && xImpl .: a |- n .: b ->
          -----------------------------
          gam |- (\\xImpl ==> n) .: a =>> b
@@ -274,13 +278,15 @@ data (|-) : Ctxt -> TypedTerm -> Type where
             -------------------------
             gam |- (Succ m) .: NatType
 
-  CaseElim : gam |- l .: NatType ->
+  CaseElim : {x : Id} ->
+             gam |- l .: NatType ->
              gam |- m .: a ->
              gam && x .: NatType |- n .: a ->
              ------------------------------
              gam |- (Case l m x n) .: a
 
-  MuRec : gam && x .: a |- m .: a ->
+  MuRec : {x : Id} ->
+          gam && x .: a |- m .: a ->
           ------------------------
           gam |- (Mu x ==> m) .: a
 
@@ -301,13 +307,10 @@ jTwoPlusTwo = (jPlus `Elim` jTwo) `Elim` jTwo
 jSuccChurch : [] |- Succ_church .: NatType =>> NatType
 jSuccChurch = Impl (SuccNat (Axiom Z))
 
--- Magnificent hack
-lolStrings : intToBool (prim__eq_String x x) = False -> Void
-
 context_injective : gam >: x .: a -> gam >: x .: b -> a = b
 context_injective Z Z = Refl
-context_injective Z (S notEq y) = void (lolStrings notEq)
-context_injective (S notEq y) Z = void (lolStrings notEq)
+context_injective Z (S notEq y) = void (notEq Refl)
+context_injective (S notEq y) Z = void (notEq Refl)
 context_injective (S notEq y) (S prf z) = context_injective y z
 
 -- jMul : [] |- Lambda.mult .: NatType =>> NatType =>> NatType

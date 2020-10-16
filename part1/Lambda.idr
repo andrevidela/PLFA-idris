@@ -41,6 +41,7 @@ plus = Mu "+" ==> \\ "m" ==> \\ "n" ==>
               "m"
               (Succ (^"+" |> ^"m" |> (^"n")))
 
+public export
 Two_church : Term
 Two_church = \\"s" ==> \\"z" ==> ^"s" |> (^"s" |> ^"z")
 
@@ -48,6 +49,7 @@ plus_church : Term
 plus_church = \\"m" ==> \\"n" ==> \\"s" ==> \\"z" ==>
                ^"m" |> ^"s" |> (^"n" |> ^"s" |> ^"z")
 
+public export
 Succ_church : Term
 Succ_church = \\"n" ==> Succ (^"n")
 
@@ -216,7 +218,7 @@ data LType : Type where
 
 infixl 6 .:
 infixr 4 >:
-infixl 5 &&
+infixl 5 &.
 infixl 5 |-
 
 -- Typed identifier
@@ -237,19 +239,19 @@ namespace Terms
 public export
 data Ctxt : Type where
   Nil : Ctxt
-  (&&) : Ctxt -> Typed -> Ctxt
+  (&.) : Ctxt -> Typed -> Ctxt
 
 -- Judgement
 public export
 data (>:) : Ctxt -> Typed -> Type where
-  Z : gam && xZ .: a >: xZ .: a
-  S : (0 notEq : Not (xS = y)) -> gam >: xS .: a -> gam && y .: b >: xS .: a
+  Z : gam &. xZ .: a >: xZ .: a
+  S : (0 notEq : Not (xS = y)) -> gam >: xS .: a -> gam &. y .: b >: xS .: a
 
 LiftContra : {0 a, b : String} ->  a == b = False -> Not (a = b)
 LiftContra prf Refl = ?LiftContra_rhs_1
 
 public export
-S' : {auto prf : (x == y) = False} -> gam >: x .: a -> gam && y .: b >: x .: a
+S' : {auto prf : (x == y) = False} -> gam >: x .: a -> gam &. y .: b >: x .: a
 S' prev = S (LiftContra prf) prev
 
 -- Typing judgement
@@ -262,7 +264,7 @@ data (|-) : Ctxt -> TypedTerm -> Type where
           gam |- (^x) .: a
 
   Impl : {xImpl : Id} -> {0 a, b : LType} ->
-         gam && xImpl .: a |- n .: b ->
+         gam &. xImpl .: a |- n .: b ->
          -----------------------------
          gam |- (\\xImpl ==> n) .: a =>> b
 
@@ -281,29 +283,36 @@ data (|-) : Ctxt -> TypedTerm -> Type where
   CaseElim : {x : Id} ->
              gam |- l .: NatType ->
              gam |- m .: a ->
-             gam && x .: NatType |- n .: a ->
+             gam &. x .: NatType |- n .: a ->
              ------------------------------
              gam |- (Case l m x n) .: a
 
   MuRec : {x : Id} ->
-          gam && x .: a |- m .: a ->
+          gam &. x .: a |- m .: a ->
           ------------------------
           gam |- (Mu x ==> m) .: a
 
 
+public export
 jTwo : {0 gam : Ctxt} -> gam |- Lambda.two .: NatType
 jTwo = SuccNat (SuccNat ZeroNat)
 
+public export
+jZero : {0 gam : Ctxt} -> gam |- Zero .: NatType
+jZero = ZeroNat
+
+public export
 jPlus : gam |- Lambda.plus .: NatType =>> NatType =>> NatType
 jPlus  = MuRec $ Impl (Impl (CaseElim
                             (Axiom (S' Z))
                             (Axiom Z)
                             (SuccNat $ (Axiom (S' (S' (S' Z))) `Elim` Axiom Z) `Elim` Axiom (S' Z))))
 
+public export
 jTwoPlusTwo : [] |- (Lambda.plus |> Lambda.two |> Lambda.two) .: NatType
 jTwoPlusTwo = (jPlus `Elim` jTwo) `Elim` jTwo
 
-
+public export
 jSuccChurch : [] |- Succ_church .: NatType =>> NatType
 jSuccChurch = Impl (SuccNat (Axiom Z))
 

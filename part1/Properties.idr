@@ -2,10 +2,10 @@
 module Properties
 
 import Decidable.Equality
-import Equality
 import Isomorphism
 import Connectives
 import Lambda
+import Equality
 
 data Exists : (this : type -> Type) -> Type where
     Evidence : (0 value : type)
@@ -36,8 +36,8 @@ reduce_wont_be_value = flip values_wont_reduce
 
 data Canonical : TypedTerm -> Type where
 
-  CanonicalLam : {xCan : Id} ->
-                 Nil && xCan .: a |- n .: b ->
+  CanonicalLam : {xCan : Id} -> 
+                 (Nil &. xCan .: a) |- n .: b ->
                  ---------------------
                  Canonical ((\\xCan ==> n) .: a =>> b)
 
@@ -80,11 +80,13 @@ typed (CanonicalLam x) = Impl x
 typed CanonicalZero = ZeroNat
 typed (CanonicalSucc x) = SuccNat (typed x)
 
+public export
 data Progress : (m : Term) -> Type where
-  Step : m ~> n -> Progress m
+  Step : {nStep : Term} ->  m ~> nStep -> Progress m
   Done : Value m -> Progress m
 
-progress : Nil |- m .: a ->
+export
+progress : {m : Term} -> Nil |- m .: a ->
            ----------------
            Progress m
 progress (Axiom Z) impossible
@@ -108,20 +110,20 @@ progress (CaseElim x y z) with (progress x)
 progress (MuRec x) = Step BetaMu
 
 
-progress_iso : Progress m ~= (Value m |+| (Exists (m ~>)))
+progress_iso : Progress m ~= (Value m |+| (n ** (m ~> n)))
 progress_iso = MkIso
   (\case
-    (Step x) => Right (Evidence _ x)
+    (Step x) => Right (_ ** x)
     (Done x) => Left x)
   (\case
     (Left x) => Done x
-    (Right (Evidence value prf)) => Step prf)
+    (Right (value ** prf)) => Step prf)
   (\case
     (Step x) => Refx
     (Done x) => Refx )
   (\case
     (Left x) => Refx
-    (Right (Evidence v prf)) => Refx)
+    (Right (v ** prf)) => Refx)
 
 varNotVal : Not (Value (^x))
 varNotVal VLam impossible
@@ -157,8 +159,8 @@ isValue (MuRec x) = No muNotVal
 extend : {0 Γ, Δ : Ctxt} ->
          (Γ >: x .: a ->
           Δ >: x .: a) ->
-         (Γ && y .: b >: x .: a ->
-          Δ && y .: b >: x .: a)
+         (Γ &. y .: b >: x .: a ->
+          Δ &. y .: b >: x .: a)
 extend f Z = Z
 extend f (S notEq z) = S notEq (f z)
 
@@ -186,7 +188,7 @@ SubsetJ c1 c2 = Subset (|-) c1 c2
 
 extend' : {0 Γ, Δ : Ctxt} ->
          SubsetC Γ Δ  ->
-         ({0 y : Typed} -> SubsetC (Γ && y) (Δ && y))
+         ({0 y : Typed} -> SubsetC (Γ &. y) (Δ &. y))
 extend' f Z = Z
 extend' f (S notEq z) = S notEq (f z)
 
@@ -210,21 +212,21 @@ weakenLemma (S notEq y) impossible
 weaken : SubsetJ [] gam
 weaken x = rename' weakenLemma x
 
-dropLemma : SubsetC (g && a && b) (g && b)
+dropLemma : SubsetC (g &. a &. b) (g &. b)
 dropLemma Z = Z
-dropLemma (S notEq Z) = ?justwhatever
+dropLemma (S notEq Z) = void (notEq ?justwhatever)
 dropLemma (S notEq (S prf x)) = S notEq x
 
-drop : SubsetJ (g && a && b) (g && b)
+drop : SubsetJ (g &. a &. b) (g &. b)
 drop x = rename' dropLemma x
 
 swapLemma : (Not (x = y))
-         -> SubsetC (g && x .: a && y .: b) (g && y .: b && x .: a)
+         -> SubsetC (g &. x .: a &. y .: b) (g &. y .: b &. x .: a)
 swapLemma f Z = Lambda.S (\c => f (sym c)) Z
 swapLemma f (S notEq Z) = Z
 swapLemma f (S notEq (S prf z)) = S prf (S notEq z)
 
-swap : (Not (x = y)) -> SubsetJ (g && x .: a && y .: b) (g && y .: b && x .: a)
+swap : (Not (x = y)) -> SubsetJ (g &. x .: a &. y .: b) (g &. y .: b &. x .: a)
 swap f z = rename' (swapLemma f) z
 
 private
@@ -237,38 +239,44 @@ decStringsEq : {a, b : String} -> (dec : Dec (a = b)) -> (a == b) = (DecBool dec
 decStringsEq (Yes Refl) = believe_me $ Refl {x=a}
 decStringsEq (No contra) = believe_me $ Refl {x=False}
 
-subst : (x : String)
+export
+substitution : (x : String)
      -> [] |- v .: a
-     -> gam && x .: a |- n .: b
+     -> gam &. x .: a |- n .: b
      -> gam |- (Lambda.subst n x v) .: b
-subst id v (Axiom {x = id} Z) with (decEq id id)
-  subst id v (Axiom {x = id} Z) | (Yes prf) = weaken v
-  subst id v (Axiom {x = id} Z) | (No contra) = void (contra Refl)
-subst str v (Axiom {x = id} (S notEq x)) with (decEq str id)
-  subst id v (Axiom {  x = id} (S notEq x)) | (Yes Refl) = void (notEq Refl)
-  subst str v (Axiom {x = id} (S notEq x)) | (No contra) with (id == str)
-    subst str v (Axiom {x = id} (S notEq x)) | (No contra) | True = ?subst_impossibl
-    subst str v (Axiom {x = id} (S notEq x)) | (No contra) | False = Axiom x
-subst str v (Impl {xImpl = id} z) with (decEq str id)
-  subst id v (Impl {xImpl = id} z) | (Yes Refl) with (id == id)
-    subst id v (Impl {xImpl = id} z) | (Yes Refl) | True = Impl (drop z)
-    subst id v (Impl {xImpl = id} z) | (Yes Refl) | False = ?bigOof
-  subst str v (Impl {xImpl = id} z) | (No contra) with (id == str)
-    subst str v (Impl {xImpl = id} z) | (No contra) | True = ?bigOof2
-    subst str v (Impl {xImpl = id} z) | (No contra) | False =
-      Impl (subst str v (swap contra z))
-subst str v (Elim z w) = Elim (subst str v z) (subst str v w)
-subst str v ZeroNat = ZeroNat
-subst str v (SuccNat z) = SuccNat (subst str v z)
-subst str v (CaseElim {x = id} z w s) with (decEq id str)
-  subst id v (CaseElim {  x = id} z w s) | (Yes Refl) =
-    CaseElim (subst id v z) (subst id v w) (drop s)
-  subst str v (CaseElim {x = id} z w s) | (No contra) =
-    CaseElim (subst str v z) (subst str v w)
-             (subst str v (swap (\g => contra (sym g)) s))
-subst str v (MuRec {x = id} z) with (decEq id str)
-  subst id v (MuRec {x = id} z) | (Yes Refl) = MuRec (drop z)
-  subst str v (MuRec {x = id} z) | (No contra) =
-    MuRec (subst str v (swap (\g => contra (sym g)) z))
-
+substitution id v (Axiom {x = id} Z) with (decEq id id)
+  substitution id v (Axiom {x = id} Z) | (Yes prf) = weaken v
+  substitution id v (Axiom {x = id} Z) | (No contra) = void (contra Refl)
+substitution str v (Axiom {x = id} (S notEq x)) with (decEq str id)
+  substitution id v (Axiom {  x = id} (S notEq x)) | (Yes Refl) = void (notEq Refl)
+  substitution str v (Axiom {x = id} (S notEq x)) | (No contra) with (decEq id str)
+    substitution str v (Axiom {  x = id} (S notEq x)) | (No contra) | (Yes prf) = 
+      void (contra (sym prf))
+    substitution str v (Axiom {  x = id} (S notEq x)) | (No contra) | (No f) = 
+      Axiom x
+substitution str v (Impl {xImpl = id} z) with (decEq str id)
+  substitution id v (Impl {xImpl = id} z) | (Yes Refl) with (decEq id id)
+    substitution id v (Impl {xImpl = id} z) | (Yes Refl) | (Yes Refl) = 
+      Impl (drop z)
+    substitution id v (Impl {xImpl = id} z) | (Yes Refl) | (No contra) = 
+      void (contra Refl)
+  substitution str v (Impl {xImpl = id} z) | (No contra) with (decEq id str)
+    substitution str v (Impl {  xImpl = id} z) | (No contra) | (Yes prf) =
+      void (contra (sym prf))
+    substitution str v (Impl {  xImpl = id} z) | (No contra) | (No f) = 
+      Impl (substitution str v (swap contra z))
+substitution str v (Elim z w) = Elim (substitution str v z) (substitution str v w)
+substitution str v ZeroNat = ZeroNat
+substitution str v (SuccNat z) = SuccNat (substitution str v z)
+substitution str v (CaseElim {x = id} z w s) with (decEq id str)
+  substitution id v (CaseElim {  x = id} z w s) | (Yes Refl) =
+    CaseElim (substitution id v z) (substitution id v w) (drop s)
+  substitution str v (CaseElim {x = id} z w s) | (No contra) =
+    CaseElim (substitution str v z) 
+             (substitution str v w)
+             (substitution str v (swap (\g => contra (sym g)) s))
+substitution str v (MuRec {x = id} z) with (decEq id str)
+  substitution id v (MuRec {x = id} z) | (Yes Refl) = MuRec (drop z)
+  substitution str v (MuRec {x = id} z) | (No contra) =
+    MuRec (substitution str v (swap (\g => contra (sym g)) z))
 

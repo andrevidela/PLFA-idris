@@ -61,17 +61,42 @@ Normal m = {n : Term} -> Not (m ~> n)
 Stuck : Term -> Type
 Stuck m = (Normal m, Not (Value m))
 
-unstuck : [] |- m .: a -> Not (Stuck m)
-unstuck x y = ?unstuck_rhs
+unstuck : {m : _} -> [] |- m .: a -> Not (Stuck m)
+unstuck x y = 
+  case progress x of
+      (Done val) => snd y val
+      (Step step) => fst y step
 
 preserves : [] |- m .: a
          -> m ->> n
          -> [] |- n .: a
+preserves x (Step y) = preserve x y
+preserves x (ReduceRefl n) = x
+preserves x (ReduceTrans y z) = 
+  let v = preserves x y 
+      w = preserves v z 
+   in w
      
 -- prnounced "whatdogs"
-wttdgs : [] |- m .: a
+wttdgs : {n : _} -> [] |- m .: a
       -> m ->> n
       -> Not (Stuck n)
+wttdgs x y z = 
+  let t = preserves x y in
+      case progress t of
+          (Done val) => snd z val  
+          (Step step) => fst z step
 
+cong4 : {p, q, l, m, n : Type} -> 
+        {a, x : p} -> 
+        {b, y : q} -> 
+        {c, z : l} -> 
+        {d, w : m} -> 
+        (f : p -> q -> l -> m -> n) ->
+        a = x -> b = y -> c = z -> d = w -> 
+        f a b c d = f x y z w
+cong4 f Refl Refl Refl Refl = Refl
+
+det : m ~> m' -> m ~> m'' -> m' = m''
 
 

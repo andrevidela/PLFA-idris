@@ -70,7 +70,7 @@ Preorder Type (~=) where
                                        (to bc (to ab (from ab (from bc x))))
                                       -< eq_cong (to bc) (to_from ab (from bc x)) >-
                                        (to bc (from bc x))
-                                      -< bc.to_from x >-
+                                      -< to_from bc x >-
                                        End x)
 
 infix 4 ~<

@@ -12,6 +12,7 @@ data Exists : (this : type -> Type) -> Type where
             -> (prf : this value)
             -> Exists this
 
+export
 values_wont_reduce : {0 m, n : Term} -> Value m -> Not (m ~> n)
 values_wont_reduce VLam (Xi1 x) impossible
 values_wont_reduce VLam (Xi2 x y) impossible

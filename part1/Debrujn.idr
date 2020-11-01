@@ -1,4 +1,4 @@
-module Debruijn
+module Debrujn
 
 import Data.Nat
 import Equality
@@ -31,10 +31,12 @@ data Ctxt : Type where
   Nil : Ctxt
   (&.) : Ctxt -> LType -> Ctxt
 
+public export
 data (>:) : Ctxt -> LType -> Type where
   Z : gam &. a >: a
   S : gam >: a -> gam &. b >: a
 
+public export
 data (|-) : Ctxt -> LType -> Type where
 
   (^) : gam >: a 
@@ -210,7 +212,7 @@ implementation Preorder (gam |- a) (->>) where
   reflexive = ReduceRefl
   transitive a b c ab bc = ReduceTrans ab bc
 
-twoIsTwo : Debruijn.cTwo |> Debruijn.cSuc |> Zero ->> Succ (Succ Zero)
+twoIsTwo : Debrujn.cTwo |> Debrujn.cSuc |> Zero ->> Succ (Succ Zero)
 twoIsTwo = begin (->>) $
            cTwo |> cSuc |> Zero
            -< Step (Xi1 (BetaLam VLam)) >-
@@ -296,7 +298,7 @@ eval (S k) l with (progress l)
 sucMu : [] |- NatType
 sucMu = Mu (Succ (#0))
 
-evalInf : (Debruijn.eval 3 Debruijn.sucMu) = MkSteps 
+evalInf : (Debrujn.eval 3 Debrujn.sucMu) = MkSteps 
     (ReduceTrans (Step BetaMu) 
     (ReduceTrans (Step (XiSucc BetaMu)) 
     (ReduceTrans (Step (XiSucc (XiSucc BetaMu))) 
@@ -304,14 +306,14 @@ evalInf : (Debruijn.eval 3 Debruijn.sucMu) = MkSteps
 evalInf = Refl
 
 
-evalTwoPlusTwo : (Debruijn.eval 100 (Debruijn.cTwo |> Debruijn.cSuc |> Zero)) ~=~ 
-                 MkSteps 
-                 (ReduceTrans (Step (Xi1 (BetaLam VLam))) 
-                 (ReduceTrans (Step (BetaLam VZero)) 
-                 (ReduceTrans (Step (Xi2 VLam (BetaLam VZero))) 
-                 (ReduceTrans (Step (BetaLam (VSucc VZero))) 
-                 (ReduceRefl (Succ (Succ Zero))))))) (Done (VSucc (VSucc VZero)))
-evalTwoPlusTwo = Refl
+-- evalTwoPlusTwo : (Debrujn.eval 100 (Debrujn.cTwo |> Debrujn.cSuc |> Zero)) ~=~ 
+--                  MkSteps 
+--                  (ReduceTrans (Step (Xi1 (BetaLam VLam))) 
+--                  (ReduceTrans (Step (BetaLam VZero)) 
+--                  (ReduceTrans (Step (Xi2 VLam (BetaLam VZero))) 
+--                  (ReduceTrans (Step (BetaLam (VSucc VZero))) 
+--                  (ReduceRefl (Succ (Succ Zero))))))) (Done (VSucc (VSucc VZero)))
+-- evalTwoPlusTwo = Refl
 
 
 

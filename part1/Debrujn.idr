@@ -21,6 +21,7 @@ infixl 5 &.
 infixl 5 |-
 
 -- lambda type
+public export
 data LType : Type where
   (=>>) : LType -> LType -> LType
   NatType : LType

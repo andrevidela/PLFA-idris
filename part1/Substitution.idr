@@ -3,7 +3,7 @@ module Substitution
 import Equality
 import Untyped
 
-funExt : {f, g : a -> b} -> ((x : a) -> f x === g x) -> f = g
+funExt : {0 f, g : a -> b} -> ((x : a) -> f x === g x) -> f = g
 
 public export
 Rename : Context -> Context -> Type
@@ -39,10 +39,10 @@ ren rho = ids . rho
 sub_head : subst (m <:> sig) (^ FZ) = m
 sub_head = Refl
 
-sub_tail : {m : _} -> {sig : Subst g d} -> (Up <.> (m <:> sig)) = sig
+sub_tail : (Up <.> (m <:> sig)) = sig
 sub_tail = funExt $ \x => Refl
 
-sub_eta : {sig : _} -> subst sig (^ FZ) <:> (Up <.> sig) = sig
+sub_eta : subst sig (^ FZ) <:> (Up <.> sig) = sig
 sub_eta = funExt $ \case FZ => Refl
                          (FS x) => Refl
 
@@ -50,7 +50,7 @@ z_shift : ((^ FZ) <:> Up) = Substitution.ids
 z_shift = funExt $ \case FZ => Refl
                          (FS x) => Refl
 
-sub_idL : {g, d : _} -> {sig : Subst g d} -> Substitution.ids <.> sig = sig
+sub_idL : Substitution.ids <.> sig = sig
 sub_idL = funExt $ \x => Refl
 
 sub_dist : {m : _} -> {sig, tau : _} -> ((m <:> sig) <.> tau) = ((subst tau m) <:> (sig <.> tau))
@@ -62,7 +62,7 @@ sub_app = Refl
 
 ---- Congruences
 
-cong_app : {b : a -> Type} -> {f, g : (x : a) -> b x} ->
+cong_app : {0 b : a -> Type} -> {0 f, g : (x : a) -> b x} ->
            f = g -> (x : a) -> f x = g x
 cong_app Refl x = Refl
 
@@ -70,16 +70,16 @@ cong_ext : (rho, rho' : Rename g d) -> (rho = rho')
         -> ext rho = ext rho'
 cong_ext rho rho' prf = cong ext prf
 
-cong_rename : {m : _} -> (rho, rho' : Rename g d) -> rho = rho' 
+cong_rename : (rho, rho' : Rename g d) -> rho = rho' 
            -> rename rho m = rename rho' m
 cong_rename rho rho' prf = cong (\x =>  rename x m) prf
 
 cong_exts : Subst g d -> sig = sig' -> exts sig = exts sig'
 cong_exts f prf = cong exts prf
 
-cong_sub : (Subst g d) -> sig = sig' -> m = m' -> 
+cong_sub : sig = sig' -> m = m' -> 
            Untyped.subst sig m = Untyped.subst sig' m'
-cong_sub f prf prf1 = cong2 Untyped.subst prf prf1
+cong_sub prf prf1 = cong2 Untyped.subst prf prf1
 
 cong_sub_zero : (m, m' : Jay b) -> m = m' -> substZero m = substZero m'
 cong_sub_zero m m' prf = cong substZero prf
@@ -88,7 +88,7 @@ cong_cons : (sig, tau : Subst g d) -> m = n -> sig = tau
          -> (m <:> sig) = (n <:> tau)
 cong_cons sig tau prf prf1 = cong2 (<:>) prf prf1
 
-cong_seq : {d : _} -> (sig, sig' : Subst g d) -> (tau, tau' : Subst d s) -> sig = sig' -> tau = tau'
+cong_seq : (sig, sig' : Subst g d) -> (tau, tau' : Subst d s) -> sig = sig' -> tau = tau'
         -> (sig <.> tau) = (sig' <.> tau')
 cong_seq sig sig' tau tau' prf prf1 = funExt lemma
   where
@@ -96,18 +96,18 @@ cong_seq sig sig' tau tau' prf prf1 = funExt lemma
     lemma x = begin (===) $ 
               ((sig <.> tau ) x) -< Refl >- 
               (subst tau (sig x)) -< cong (subst tau) (cong_app prf x) >- 
-              (subst tau (sig' x)) -< cong_sub sig' prf1 Refl >- 
+              (subst tau (sig' x)) -< cong_sub {-sig'-} prf1 Refl >- 
               (subst tau' (sig' x)) -< Refl >- 
               End ((sig' <.> tau') x)
 
-ren_ext : {rho : Rename g d} -> ren (ext rho) = exts (ren rho)
+ren_ext : {0 rho : Rename g d} ->  ren (ext rho) = exts (ren rho)
 ren_ext = funExt $ lemma
   where
     lemma : (x : Elem (S g)) -> ren (ext rho) x = exts (ren rho) x
     lemma FZ = Refl
     lemma (FS x) = Refl
 
-rename_subst_ren : {g : Nat} -> {rho : Rename g d} -> (m : Jay g)
+rename_subst_ren : {0 g : Nat} -> {rho : Rename g d} -> (m : Jay g)
                 -> rename rho m = subst (ren rho) m
 rename_subst_ren (^ x) = Refl
 rename_subst_ren {rho=r} (\\ x) = 
@@ -115,19 +115,98 @@ rename_subst_ren {rho=r} (\\ x) =
     rename r (\\ x) 
       -< cong (\\) (rename_subst_ren{rho = ext r} x) >-
     (\\ (subst (ren (ext r)) x)) 
-      -< cong (\\) (cong_sub (ren r) (ren_ext )  Refl) >-
+      -< cong (\\) (cong_sub {-(ren r)-} (ren_ext )  Refl) >-
     (\\ (subst (exts (ren r)) x)) 
       -< Refl >-
     End (subst (ren r) (\\ x))
 rename_subst_ren (x |> y) = 
   cong2 (|>) (rename_subst_ren x) (rename_subst_ren y)
 
+ren_shift : Substitution.ren FS = Up 
+ren_shift = funExt (\x => Refl)
 
+rename_shift : {m : _} -> rename FS m = subst Up m
+rename_shift = begin (===) $ 
+               rename FS m -< rename_subst_ren m >-
+               subst (ren FS) m -< cong_sub ren_shift Refl >-
+               End (subst Up m)
 
+exts_cons_shift : {sig : _} -> exts sig = (^ FZ <:> (sig <.> Up))
+exts_cons_shift = funExt $ \case FZ => Refl
+                                 (FS x) => rename_shift
 
+ext_cons_Z_shift : {0 rho : _} -> ren (ext rho) = ^ FZ <:> (ren rho <.> Up)
+ext_cons_Z_shift = funExt $ \case FZ => Refl
+                                  (FS x) => Refl
 
+subst_Z_cons_ids : {0 m : _} -> substZero m = (m <:> Substitution.ids)
+subst_Z_cons_ids = funExt $ \case FZ => Refl
+                                  (FS x) => Refl
 
+sub_abs : {sig : Subst g d} -> {0 n : Jay (S g)} -> 
+          (subst sig (\\ n)) = (\\ (subst ((^ FZ) <:> (sig <.> Up)) n))
+sub_abs = cong (\\) $ cong_sub (exts_cons_shift) Refl
 
+exts_ids : exts Substitution.ids = Substitution.ids
+exts_ids = funExt $ \case FZ => Refl
+                          (FS x) => Refl
+
+sub_id : (m : Jay d) -> subst Substitution.ids m = m
+sub_id (^ x) = believe_me $ Refl {x = ^x}
+sub_id (\\ x) = cong (\\) $ begin (===) $ 
+                (subst (exts Substitution.ids) x)  -< cong_sub exts_ids Refl >-
+                subst Substitution.ids x -< sub_id x >-
+                End x
+sub_id (x |> y) = cong2 (|>) (sub_id x) (sub_id y)
+
+rename_id : {m : _} -> rename (\x => x) m = m
+rename_id = begin (===) $ 
+            rename (\x => x) m -< rename_subst_ren m >-
+            subst (ren (\x => x)) m -< sub_id m >-
+            End m
+
+sub_idR : {sig : Subst g d} -> (sig <.> Substitution.ids) = sig
+sub_idR = funExt $ \x => sub_id _
+
+composeExt : {rho : Rename d s} -> {rho' : Rename g d}
+          -> ((ext rho) . (ext rho')) = ext (rho . rho') 
+composeExt = funExt $ \case FZ => Refl
+                            (FS x) => Refl
+
+compose_rename : {rho : Rename d s} -> {rho' : Rename g d}
+              -> rename rho (rename rho' m) = rename (rho . rho') m
+
+commute_subst_rename : {m : Jay g} -> {sig : Subst  g d} 
+  -> {rho : {g' : _} -> Rename g' (S g')}
+  -> ({x : Elem g} -> exts sig (rho x) = rename rho (sig x))
+  -> subst (exts sig) (rename rho m) = rename rho (subst sig m)
+
+exts_seq : {sig1 : Subst g d} -> {sig2 : Subst d d'} -> 
+           (exts sig1 <.> exts sig2) = exts (sig1 <.> sig2)
+
+sub_sub : {sig1 : Subst g d} -> {sig2 : Subst d s}
+       -> subst sig2 (subst sig1 m) = subst (sig1 <.> sig2) m
+
+rename_subst : {rho : Rename g d } -> {sig : Subst d d'}
+            -> subst sig (rename rho m) = subst (sig . rho) m
+
+sub_assoc : {sig : Subst g d} -> {tau : Subst d s} -> {tht : Subst s p}
+         -> (sig <.> tau) <.> tht = sig <.> (tau <.> tht)
+
+subst_zero_exts_cons : {sig : Subst g d}
+  -> exts sig <.> substZero m = (m <:> sig)
+
+subst_commute : {n : Jay (S g)} -> {m : Jay g} -> {sig : Subst g d} 
+  ->  (substOne (subst (exts sig) n) (subst sig m)) = subst sig (substOne n m)
+
+rename_subst_commute : 
+  substOne (rename (ext rho) n) (rename rho m) = rename rho (substOne n m)
+
+subst2 : Jay (S (S g)) -> Jay g -> Jay (S g)
+subst2 n m = subst (exts (substZero m)) n
+
+substitution : substOne (substOne m n) l = substOne (subst2 m l) (substOne n l)
+substitution = sym subst_commute
 
 
 

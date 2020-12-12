@@ -173,32 +173,59 @@ composeExt : {rho : Rename d s} -> {rho' : Rename g d}
 composeExt = funExt $ \case FZ => Refl
                             (FS x) => Refl
 
-compose_rename : {rho : Rename d s} -> {rho' : Rename g d}
+compose_rename : (m : Jay g) -> {rho : Rename d s} -> {rho' : Rename g d}
               -> rename rho (rename rho' m) = rename (rho . rho') m
+compose_rename (^ x) = Refl
+compose_rename (\\ x) = cong (\\) $ begin (===) $
+   rename (ext rho) (rename (ext rho') x) -< compose_rename x >-
+   rename ((ext rho) . (ext rho')) x  -< cong_rename _ _ composeExt >-
+   End (rename (ext (\x => rho (rho' x))) x)
+compose_rename (x |> y) = cong2 (|>) (compose_rename x) (compose_rename y) 
 
-commute_subst_rename : {m : Jay g} -> {sig : Subst  g d} 
+-- TODO
+commute_subst_rename : {g, d: _} -> (m : Jay g) -> {sig : Subst  g d} 
   -> {rho : {g' : _} -> Rename g' (S g')}
-  -> ({x : Elem g} -> exts sig (rho x) = rename rho (sig x))
-  -> subst (exts sig) (rename rho m) = rename rho (subst sig m)
+  -> ((x : Elem g) -> Untyped.exts sig (rho x) = rename (rho) (sig x))
+  -> subst (exts sig) (rename (rho) m) = rename (rho) (subst sig m)
+commute_subst_rename (^ t) f = f t
+commute_subst_rename (\\ x) {rho=r} {sig=s} f = 
+  let 
+    checkRho : {g'' : _} -> Rename g'' (S g'')
+    checkRho {g''=0} x = absurd x
+    checkRho {g''=(S k)} x = ext r x
+    fn : (x : Fin (S g)) -> exts (exts s) (ext r x) = rename (ext r) (exts s x)
+    fn = ?pls
+  in cong (\\) $ ?dunno
+                                
+commute_subst_rename (a |> b) f = 
+  cong2 (|>) (commute_subst_rename {rho} a f )
+             (commute_subst_rename {rho} b f)
 
+-- TODO
 exts_seq : {sig1 : Subst g d} -> {sig2 : Subst d d'} -> 
            (exts sig1 <.> exts sig2) = exts (sig1 <.> sig2)
 
+-- TODO
 sub_sub : {sig1 : Subst g d} -> {sig2 : Subst d s}
        -> subst sig2 (subst sig1 m) = subst (sig1 <.> sig2) m
 
+-- TODO
 rename_subst : {rho : Rename g d } -> {sig : Subst d d'}
             -> subst sig (rename rho m) = subst (sig . rho) m
 
+-- TODO
 sub_assoc : {sig : Subst g d} -> {tau : Subst d s} -> {tht : Subst s p}
          -> (sig <.> tau) <.> tht = sig <.> (tau <.> tht)
 
+-- TODO
 subst_zero_exts_cons : {sig : Subst g d}
   -> exts sig <.> substZero m = (m <:> sig)
 
+-- TODO
 subst_commute : {n : Jay (S g)} -> {m : Jay g} -> {sig : Subst g d} 
   ->  (substOne (subst (exts sig) n) (subst sig m)) = subst sig (substOne n m)
 
+-- TODO
 rename_subst_commute : 
   substOne (rename (ext rho) n) (rename rho m) = rename rho (substOne n m)
 

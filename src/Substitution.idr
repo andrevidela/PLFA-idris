@@ -62,6 +62,7 @@ sub_app = Refl
 
 ---- Congruences
 
+export
 cong_app : {0 b : a -> Type} -> {0 f, g : (x : a) -> b x} ->
            f = g -> (x : a) -> f x = g x
 cong_app Refl x = Refl

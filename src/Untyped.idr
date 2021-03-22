@@ -15,7 +15,7 @@ infixr 4 ~>  -- Single Reduction step
 infixr 2 ->> -- "Reduces to"
 infixr 7 =>> -- Type in Lambda calculus
 
-infix 6 `∋` -- Checked / inherited 
+infix 6 `∋` -- Checked / inherited
 infix 6 `∈` -- inferred / synthesized
 
 infixr 8 `X` -- Product in Lambda calculus
@@ -47,11 +47,12 @@ data Jay : Context -> Type where
 
   (\\)  :  {0 Γ : Context} -> Jay (S Γ) ->  Jay Γ
 
-  (|>) :  {0 Γ : Context} 
+  (|>) :  {0 Γ : Context}
        -> Jay Γ
        -> Jay Γ
        -> Jay Γ
 
+export
 twoChurch : {n : Nat} -> Jay n
 twoChurch = \\ \\ ^1 |> (^1 |> ^0)
 
@@ -62,7 +63,7 @@ plusChurch : {n : Nat} -> Jay n
 plusChurch = \\ \\ \\ \\ (^3 |> ^1 |> (^2 |> ^1 |> ^0))
 
 twoPlusTwoChurch : Jay Z
-twoPlusTwoChurch = plusChurch |> twoChurch |> twoChurch 
+twoPlusTwoChurch = plusChurch |> twoChurch |> twoChurch
 
 public export
 ext : (Elem g -> Elem d) -> Elem (S g) -> Elem (S d)
@@ -95,7 +96,7 @@ public export
 substOne : Jay (S g) -> Jay g -> Jay g
 substOne x y = subst (substZero y)  x
 
-mutual 
+mutual
   public export
   data Neutral : Jay g -> Type where
 
@@ -111,13 +112,13 @@ mutual
 
 public export
 data (~>) : Jay g -> Jay g -> Type where
-  
+
   Xi : l ~> l' -> l |> m ~> l' |> m
 
   Xi2 : m ~> m' -> l |> m ~> l |> m'
 
-  Beta : (\\ n) |> m ~> substOne n m 
-  
+  Beta : (\\ n) |> m ~> substOne n m
+
   Zeta : n ~> n' -> \\ n ~> \\ n'
 
 namespace TransitiveClosure
@@ -126,7 +127,7 @@ namespace TransitiveClosure
     Step : {m : _} -> m ~> n -> m ->> n
     ReduceRefl : (t : Jay g) -> t ->> t
     ReduceTrans : {l, m, n : _} -> l ->> m -> m ->> n -> l ->> n
-  
+
   public export
   implementation Preorder (Jay g) (->>) where
     reflexive = ReduceRefl
@@ -152,14 +153,14 @@ progress ((x |> z) |> y) with (progress (x |> z))
   progress ((x |> z) |> y) | (Step w) = Step (Xi w)
   progress ((x |> z) |> y) | (Done w) with (progress y)
     progress ((x |> z) |> y) | (Done w) | (Step v) = Step (Xi2 v)
-    progress ((x |> z) |> y) | (Done (Term' w)) | (Done v) = 
+    progress ((x |> z) |> y) | (Done (Term' w)) | (Done v) =
       Done (Term' (App w v))
 
 namespace Evaluator
   public export
   Gas : Type
   Gas = Nat
-  
+
   public export
   data Finished : Jay g -> Type where
     Done : Normal n -> Finished n
@@ -168,12 +169,12 @@ namespace Evaluator
 data Steps : Jay g -> Type where
  MkSteps : l ->> n -> Finished n -> Steps l
 
-eval : Gas -> (l : Jay g) -> Steps l 
+eval : Gas -> (l : Jay g) -> Steps l
 eval 0 l = MkSteps (ReduceRefl l) Out
 eval (S k) l with (progress l)
   eval (S k) l | (Done x) = MkSteps (ReduceRefl l) (Done x)
   eval (S k) m | (Step x) with (eval k m)
-    eval (S k) m | (Step x) | (MkSteps y z) = 
+    eval (S k) m | (Step x) | (MkSteps y z) =
       MkSteps y z
 
 zero' : {g : _} -> Jay g
@@ -198,27 +199,27 @@ plus' : {g : _} -> Jay g
 plus' = mu $ \\ \\ case' (^1) (^0) (suc' $ (^3) |> (^0) |> (^1))
 
 mult' : {g : _} -> Jay g
-mult' = mu $ \\ \\ case' (^1) (suc' zero') 
+mult' = mu $ \\ \\ case' (^1) (suc' zero')
                               (plus' |> (^1) |> ((^3) |> (^0) |> (^1)))
 
 public export
-appL_cong : {l, l', m : _} 
+appL_cong : {l, l', m : _}
          -> l ->> l'
          -> l |> m ->> l' |> m
 appL_cong (Step x) = Step (Xi x)
 appL_cong (ReduceRefl l') = ReduceRefl (l' |> m)
-appL_cong (ReduceTrans ((Step x)) y) = 
+appL_cong (ReduceTrans ((Step x)) y) =
   ReduceTrans (Step (Xi x)) (appL_cong y)
-appL_cong (ReduceTrans ((ReduceRefl l)) y) = 
+appL_cong (ReduceTrans ((ReduceRefl l)) y) =
   ReduceTrans (ReduceRefl (l |> m)) (appL_cong y)
-appL_cong (ReduceTrans ((ReduceTrans x z)) y) =  
-  ReduceTrans (ReduceTrans (appL_cong x) 
-                           (ReduceTrans (appL_cong z) 
+appL_cong (ReduceTrans ((ReduceTrans x z)) y) =
+  ReduceTrans (ReduceTrans (appL_cong x)
+                           (ReduceTrans (appL_cong z)
                                         (ReduceRefl _)))
                                         (appL_cong y)
- 
+
 public export
-appR_cong : {l, m', m : _} 
+appR_cong : {l, m', m : _}
          -> m ->> m'
          -> l |> m ->> l |> m'
 appR_cong (Step x) = Step (Xi2 x)
@@ -227,16 +228,16 @@ appR_cong (ReduceTrans ((Step x)) y) =
   ReduceTrans (Step (Xi2 x)) (appR_cong y)
 appR_cong (ReduceTrans ((ReduceRefl l)) y) = ?asjiod
   ReduceTrans (ReduceRefl (_ |> _)) (appR_cong y)
-appR_cong (ReduceTrans ((ReduceTrans x z)) y) = 
-  ReduceTrans (ReduceTrans (appR_cong x) 
-                           (ReduceTrans (appR_cong z) 
+appR_cong (ReduceTrans ((ReduceTrans x z)) y) =
+  ReduceTrans (ReduceTrans (appR_cong x)
+                           (ReduceTrans (appR_cong z)
                                         (ReduceRefl _)))
                                         (appR_cong y)
- 
+
 public export
 abs_cong : n ->> n' -> \\ n ->> \\ n'
 abs_cong (Step x) = Step (Zeta x)
 abs_cong (ReduceRefl n') = ReduceRefl (\\ n')
-abs_cong (ReduceTrans x y) = 
+abs_cong (ReduceTrans x y) =
   ReduceTrans (abs_cong x) (abs_cong y)
 
